@@ -190,23 +190,105 @@
   // Only the shop's own fonts, shipped in fonts/ (list in fonts/fonts.json, made from the
   // Swirly / Retro Groovy / fontOK_set01 folders). Each file is fetched the first time it is
   // drawn, so opening the app doesn't download all of them.
+  // fonts-private/ (same format) is for licensed fonts that must NOT be published: it exists only
+  // on this computer (serve.py), is never uploaded to GitHub, and is simply skipped when missing.
   let bundledPromise = null;
   function registerBundledFonts() {
     if (bundledPromise) return bundledPromise;
-    bundledPromise = (async () => {
+    const load = async (dir, required) => {
       try {
-        const list = await (await fetch('fonts/fonts.json')).json();
-        for (const f of list) {
-          document.fonts.add(new FontFace(f.family, `url("fonts/${encodeURIComponent(f.file)}")`));
-        }
-        return [...new Set(list.map(f => f.family))];
-      } catch (e) { console.error('fonts.json', e); return []; }
-    })();
+        const r = await fetch(`${dir}/fonts.json`, { cache: 'no-cache' });
+        if (!r.ok) { if (required) console.error(`${dir}/fonts.json`, r.status); return []; }
+        const list = await r.json();
+        for (const f of list) document.fonts.add(new FontFace(f.family, `url("${dir}/${encodeURIComponent(f.file)}")`));
+        return list.map(f => f.family);
+      } catch (e) { if (required) console.error(`${dir}/fonts.json`, e); return []; }
+    };
+    bundledPromise = Promise.all([load('fonts', true), load('fonts-private', false)])
+      .then(([a, b]) => [...new Set([...a, ...b])]);
     return bundledPromise;
   }
 
+  // ── personal fonts: picked from a file once per device, kept in this browser only ──
+  // (for licensed fonts that may not be put on a public web site)
+  function fontNameFromFile(buf) {
+    try {
+      const v = new DataView(buf);
+      let off = 0;
+      if (v.getUint32(0) === 0x74746366) off = v.getUint32(12); // .ttc → first font
+      const numTables = v.getUint16(off + 4);
+      for (let i = 0; i < numTables; i++) {
+        const rec = off + 12 + i * 16;
+        if (String.fromCharCode(v.getUint8(rec), v.getUint8(rec + 1), v.getUint8(rec + 2), v.getUint8(rec + 3)) !== 'name') continue;
+        const t = v.getUint32(rec + 8);
+        const count = v.getUint16(t + 2), strings = t + v.getUint16(t + 4);
+        const best = {};
+        for (let j = 0; j < count; j++) {
+          const r = t + 6 + j * 12;
+          const platform = v.getUint16(r), lang = v.getUint16(r + 4), nameId = v.getUint16(r + 6);
+          const len = v.getUint16(r + 8), so = strings + v.getUint16(r + 10);
+          if (![1, 2, 16, 17].includes(nameId)) continue;
+          let s = '';
+          if (platform === 3 || platform === 0) for (let k = 0; k < len; k += 2) s += String.fromCharCode(v.getUint16(so + k));
+          else for (let k = 0; k < len; k++) s += String.fromCharCode(v.getUint8(so + k));
+          const score = (platform === 3 ? 2 : 0) + (lang === 0x409 || lang === 0 ? 1 : 0);
+          if (s.trim() && (!best[nameId] || score > best[nameId].score)) best[nameId] = { s: s.trim(), score };
+        }
+        const fam = (best[16] || best[1])?.s, sub = (best[17] || best[2])?.s || 'Regular';
+        if (!fam) return null;
+        // one entry per file: "Family" for the regular style, "Family Bold" etc. otherwise
+        return /^(regular|normal|book|roman)$/i.test(sub) || fam.toLowerCase().endsWith(sub.toLowerCase()) ? fam : `${fam} ${sub}`;
+      }
+    } catch { /* not a font we can read */ }
+    return null;
+  }
+
+  let userFonts = [];
+  async function registerUserFonts() {
+    const keys = (await kvKeys()).filter(k => String(k).startsWith('font:'));
+    const names = [];
+    for (const k of keys) {
+      const f = await kvGet(k);
+      try { document.fonts.add(new FontFace(f.family, f.data)); names.push(f.family); }
+      catch (e) { console.warn('font failed', f.family, e); }
+    }
+    return names;
+  }
+
+  async function addUserFonts() {
+    const files = await pickFiles('.ttf,.otf,.ttc,.woff,.woff2,font/*,application/x-font-ttf,application/font-sfnt', true);
+    if (!files) return [];
+    const added = [], failed = [];
+    for (const file of files) {
+      if (file.name.startsWith('._')) continue; // macOS leftovers
+      const data = await file.arrayBuffer();
+      const family = fontNameFromFile(data) || file.name.replace(/\.[^.]+$/, '');
+      try {
+        const face = new FontFace(family, data);
+        await face.load();
+        document.fonts.add(face);
+      } catch { failed.push(file.name); continue; }
+      await kvSet('font:' + family, { family, fileName: file.name, data });
+      added.push(family);
+    }
+    if (added.length) {
+      userFonts = [...new Set([...userFonts, ...added])];
+      emit('fonts-changed', await allFonts());
+    }
+    if (failed.length) alert(`อ่านไฟล์ฟอนต์ไม่ได้:\n• ${failed.join('\n• ')}`);
+    return added;
+  }
+  async function listUserFonts() {
+    return (await kvKeys()).filter(k => String(k).startsWith('font:')).map(k => String(k).slice(5)).sort((a, b) => a.localeCompare(b));
+  }
+  async function deleteUserFont(family) {
+    await kvDel('font:' + family);
+    userFonts = userFonts.filter(f => f !== family);
+    emit('fonts-changed', await allFonts());
+  }
+
   async function allFonts() {
-    return (await registerBundledFonts()).slice().sort((a, b) => a.localeCompare(b));
+    return [...new Set([...await registerBundledFonts(), ...userFonts])].sort((a, b) => a.localeCompare(b));
   }
   // ── icons ──
   const BUILTIN_ICONS = ['bone', 'cat', 'cloud', 'crown', 'donut', 'fish', 'flower', 'heart', 'lightning', 'moon', 'music', 'paw', 'star'];
@@ -245,7 +327,7 @@
   const projectHandles = new Map(); // file name → FileSystemFileHandle (Chrome/Edge: save overwrites)
 
   window.api = {
-    listSystemFonts: allFonts,
+    listSystemFonts: async () => { userFonts = await registerUserFonts(); return allFonts(); },
     getFavoriteFonts: async () => lsGet('favoriteFonts', []),
     saveFavoriteFonts: async (list) => { lsSet('favoriteFonts', list); return { ok: true }; },
 
@@ -421,6 +503,17 @@
 
   // ── settings file: carry this browser's settings to another Mac / iPad / PC ──
   const SETTINGS_FORMAT = 'onzen-flat-keychain-settings';
+  function bufToB64(buf) {
+    const u8 = new Uint8Array(buf);
+    let s = '';
+    for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000));
+    return btoa(s);
+  }
+  function b64ToBuf(b64) {
+    const s = atob(b64), u8 = new Uint8Array(s.length);
+    for (let i = 0; i < s.length; i++) u8[i] = s.charCodeAt(i);
+    return u8.buffer;
+  }
   const LS_KEYS = ['prefs', 'presets', 'favoriteFonts', 'sendTarget'];
 
   async function exportSettings() {
@@ -432,7 +525,12 @@
       localStorage: ls,
       icons: await userIcons(),
       recent: (await kvGet('recent')) || [],
-      work: (await kvGet('autosave')) || null
+      work: (await kvGet('autosave')) || null,
+      // personal fonts travel inside this file — keep the file to yourself
+      fonts: await Promise.all((await listUserFonts()).map(async fam => {
+        const f = await kvGet('font:' + fam);
+        return { family: f.family, fileName: f.fileName, base64: bufToB64(f.data) };
+      }))
     };
     const name = `Onzen-ตั้งค่า_${new Date().toISOString().slice(0, 10)}.json`;
     const saved = await saveFile(name, JSON.stringify(data), [{ name: 'ไฟล์ตั้งค่า', extensions: ['json'] }]);
@@ -461,6 +559,10 @@
       done.push(`ฟอนต์โปรด ${ls.favoriteFonts.length} ตัว`);
     }
     if (ls.sendTarget) lsSet('sendTarget', ls.sendTarget);
+    if (Array.isArray(data.fonts) && data.fonts.length) {
+      for (const f of data.fonts) if (f && f.family && f.base64) await kvSet('font:' + f.family, { family: f.family, fileName: f.fileName, data: b64ToBuf(f.base64) });
+      done.push(`ฟอนต์ส่วนตัว ${data.fonts.length} ตัว`);
+    }
     if (Array.isArray(data.icons) && data.icons.length) {
       for (const ic of data.icons) if (ic && ic.file) await kvSet('icon:' + ic.file, ic);
       done.push(`ไอคอนของฉัน ${data.icons.length} รูป`);
@@ -489,6 +591,7 @@
   // used by web-menu.js
   window.webApp = {
     autosaveSoon, autosaveGet: () => kvGet('autosave'), newWork, exportSettings, importSettings,
+    addUserFonts, listUserFonts, deleteUserFont,
     emit, on, kvGet, lsGet, lsSet, saveFile, shareFile, canShareFile, isIOS, isAndroid,
     setExportTarget: (fn) => { exportTarget = fn; },
     recentProjects: async () => ((await kvGet('recent')) || []).map(p => p.name),

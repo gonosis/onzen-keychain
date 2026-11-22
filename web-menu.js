@@ -93,6 +93,19 @@
     ];
   });
 
+  menu('ฟอนต์', async () => {
+    const mine = await app.listUserFonts();
+    return [
+      { label: 'เพิ่มฟอนต์ส่วนตัว (.ttf / .otf)...', run: async () => {
+          const added = await app.addUserFonts();
+          if (added.length) alert(`เพิ่มฟอนต์แล้ว ${added.length} ตัว (เก็บไว้ในเบราว์เซอร์ของเครื่องนี้เท่านั้น):\n• ${added.join('\n• ')}`);
+        } },
+      '-',
+      { section: mine.length ? `ฟอนต์ส่วนตัวในเครื่องนี้ ${mine.length} ตัว (กดเพื่อลบ)` : 'ยังไม่มีฟอนต์ส่วนตัวในเครื่องนี้' },
+      ...mine.map(f => ({ label: `✕  ${f}`, run: async () => { if (confirm(`ลบฟอนต์ "${f}" ออกจากเครื่องนี้?`)) await app.deleteUserFont(f); } }))
+    ];
+  });
+
   menu('ตั้งค่า', async () => {
     const cur = app.lsGet('prefs', {}).minFeatureMM ?? 0.4;
     return [
