@@ -76,7 +76,64 @@ export async function buildTextSource(el) {
     src.lastRange = [Math.min(src.width - 1, lastStart - src.offsetX), src.width];
   }
   if (src) src.charBoxes = charBoxes.map(b => ({ ...b, x0: b.x0 - src.offsetX, x1: b.x1 - src.offsetX, y0: b.y0 - src.offsetY, y1: b.y1 - src.offsetY }));
+  // web: alternating heights → which character each inked pixel belongs to, by the glyph's real
+  // shape (script fonts draw far outside their advance box, so boxes alone cut letters in two).
+  if (src && el.altHeights) src.charOwner = buildCharOwner(canvas, setup, lines, widths, maxW, pad, lineH, el.align, src);
   return warpSource(src, el);
+}
+
+// web: owner map (Uint16, cropped to `src`): 0 = no ink, n = n-th non-space character.
+// Each line is drawn one character longer at a time; the ink a step adds belongs to that
+// character (so joins of connected script letters go to the earlier letter). Ink with no owner
+// yet (anti-aliased edges, shaping changes) is then filled from its nearest owned neighbour.
+function buildCharOwner(fullCanvas, setup, lines, widths, maxW, pad, lineH, align, src) {
+  const W = src.width, H = src.height, ox = src.offsetX, oy = src.offsetY;
+  const owner = new Uint16Array(W * H);
+  const c = document.createElement('canvas');
+  c.width = W; c.height = H;
+  const ctx = c.getContext('2d', { willReadFrequently: true });
+  setup(ctx);
+  ctx.fillStyle = '#fff';
+  let charNo = 0;
+  lines.forEach((line, i) => {
+    const w = widths[i];
+    const x = (align === 'left' ? pad : align === 'right' ? pad + maxW - w : pad + (maxW - w) / 2) - ox;
+    const baseline = pad + TEXT_FONT_PX + i * lineH - oy;
+    // only this line's band of rows
+    const y0 = Math.max(0, Math.floor(baseline - TEXT_FONT_PX * 1.6)), y1 = Math.min(H, Math.ceil(baseline + TEXT_FONT_PX * 0.9));
+    if (y1 <= y0) return;
+    const chars = Array.from(line);
+    let prefix = '';
+    for (const ch of chars) {
+      prefix += ch;
+      if (/\s/.test(ch)) continue;
+      charNo++;
+      ctx.clearRect(0, y0, W, y1 - y0);
+      ctx.fillText(prefix, x, baseline);
+      const d = ctx.getImageData(0, y0, W, y1 - y0).data;
+      for (let p = 0, n = W * (y1 - y0); p < n; p++) {
+        if (d[p * 4 + 3] < 96) continue;
+        const k = y0 * W + p;
+        if (!owner[k]) owner[k] = charNo;
+      }
+    }
+  });
+  // fill unowned ink (and a small margin around it) from neighbours
+  const ink = src.canvas.getContext('2d', { willReadFrequently: true }).getImageData(0, 0, W, H).data;
+  for (let pass = 0; pass < 12; pass++) {
+    let changed = 0;
+    const prev = owner.slice();
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const k = y * W + x;
+        if (prev[k] || (ink[k * 4 + 3] === 0 && pass > 3)) continue;
+        const v = (x > 0 && prev[k - 1]) || (x < W - 1 && prev[k + 1]) || (y > 0 && prev[k - W]) || (y < H - 1 && prev[k + W]);
+        if (v) { owner[k] = v; changed++; }
+      }
+    }
+    if (!changed) break;
+  }
+  return { w: W, h: H, data: owner };
 }
 
 export function buildImageSource(img, el) {

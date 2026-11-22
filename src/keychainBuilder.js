@@ -1075,6 +1075,15 @@ function itemHeightFn(it, world, ppm) {
     const lx = dx * cos + dy * sin, ly = -dx * sin + dy * cos;
     const sx = ((it.flipX ? -lx : lx) / it.widthMM + 0.5) * sw;
     const sy = (0.5 - ly / it.heightMM) * sh;
+    // web: the letter whose real ink covers this spot (owner map), else the nearest advance box
+    const own = it.source.charOwner;
+    if (own) {
+      const ix = Math.floor(sx), iy = Math.floor(sy);
+      if (ix >= 0 && iy >= 0 && ix < own.w && iy < own.h) {
+        const no = own.data[iy * own.w + ix];
+        if (no) return no % 2 === 1 ? it.altOddMM : it.altEvenMM;
+      }
+    }
     let best = boxes[0], bestD = Infinity;
     for (const b of boxes) {
       const ddx = sx < b.x0 ? b.x0 - sx : sx > b.x1 ? sx - b.x1 : 0;

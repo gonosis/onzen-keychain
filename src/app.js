@@ -122,7 +122,7 @@ const imageCache = new Map();
 
 function sourceKey(el) {
   const warp = `|${el.bendDeg || 0}|${el.waveAmp || 0}|${el.waveCount}|${el.wavePhase}`;
-  if (el.type === 'text') return `t|${el.text}|${el.font}|${el.bold}|${el.italic}|${el.letterSpacing}|${el.lineHeight}|${el.align}` + warp;
+  if (el.type === 'text') return `t|${el.text}|${el.font}|${el.bold}|${el.italic}|${el.letterSpacing}|${el.lineHeight}|${el.align}|${el.altHeights ? 'alt' : ''}` + warp; // web: alt → per-letter owner map
   return `i|${el.imageKey}|${el.imgMode}|${el.threshold}|${el.invert}|${el.colorSplit ? (el.colorAuto !== false ? 'auto' : el.colorCount || 3) : 0}` + warp;
 }
 
