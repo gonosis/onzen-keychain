@@ -84,25 +84,97 @@
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
-  // Chrome / Edge on a computer have a real "Save as" dialog; Safari / iPad download instead.
+  // Which device is this? iPadOS reports itself as a Mac, so also look for a touch screen.
+  const ua = navigator.userAgent;
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isAndroid = /Android/i.test(ua);
+
+  const makeFile = (name, data) => new File([data], name, { type: MIME[extOf(name)] || 'application/octet-stream' });
+  // Can this browser hand a file of this type to other apps (share sheet)?
+  function canShareFile(name) {
+    try { return typeof navigator.canShare === 'function' && navigator.canShare({ files: [makeFile(name, new Uint8Array(1))] }); }
+    catch { return false; }
+  }
+
+  // Building a model can take a few seconds; by then the browser may no longer count the click
+  // as "the user asked for this" and refuses to open a save/share window. Then we ask for one tap.
+  function tapToContinue(message, button) {
+    return new Promise(resolve => {
+      const back = document.createElement('div');
+      back.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:3000;display:flex;align-items:center;justify-content:center';
+      back.innerHTML = `<div style="background:#232323;border:1px solid #3a3a3a;border-radius:10px;padding:18px 20px;max-width:340px;color:var(--text,#eee);font:inherit;text-align:center">
+        <div class="msg" style="margin-bottom:14px;line-height:1.5"></div>
+        <div style="display:flex;gap:8px;justify-content:center"><button class="cancel">ยกเลิก</button><button class="go primary"></button></div></div>`;
+      back.querySelector('.msg').textContent = message;
+      back.querySelector('.go').textContent = button;
+      const done = (v) => { back.remove(); resolve(v); };
+      back.querySelector('.go').onclick = () => done(true);
+      back.querySelector('.cancel').onclick = () => done(false);
+      document.body.appendChild(back);
+    });
+  }
+  const needsTap = (e) => e && (e.name === 'NotAllowedError' || e.name === 'SecurityError');
+
+  // Share sheet (iPhone / iPad / Android): "Save to Files", AirDrop, or another app such as Bambu Handy.
+  // Resolves true when shared, false when the user cancelled.
+  async function shareFile(name, data) {
+    const file = makeFile(name, data);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      try { await navigator.share({ files: [file] }); return true; }
+      catch (e) {
+        if (e && e.name === 'AbortError') return false;
+        if (attempt === 0 && needsTap(e)) {
+          if (!(await tapToContinue(`ไฟล์ ${name} พร้อมแล้ว`, 'แชร์ / บันทึก'))) return false;
+          continue;
+        }
+        throw e;
+      }
+    }
+    return false;
+  }
+
+  // Chrome / Edge on a computer have a real "Save as" dialog.
   const canSavePicker = typeof window.showSaveFilePicker === 'function';
   async function saveWithPicker(name, data, filters) {
     const ext = extOf(name);
     const types = (filters || []).map(f => ({ description: f.name, accept: { [MIME[ext] || 'application/octet-stream']: f.extensions.map(e => '.' + e) } }));
-    const handle = await window.showSaveFilePicker({ suggestedName: name, types });
+    const open = () => window.showSaveFilePicker({ suggestedName: name, types });
+    let handle;
+    try { handle = await open(); }
+    catch (e) {
+      if (!needsTap(e)) throw e;
+      if (!(await tapToContinue(`ไฟล์ ${name} พร้อมแล้ว`, 'บันทึก...'))) { const a = new Error('cancel'); a.name = 'AbortError'; throw a; }
+      handle = await open();
+    }
     const w = await handle.createWritable();
     await w.write(data);
     await w.close();
     return handle;
   }
-  // Returns the saved file name, or null if the user cancelled.
+  // Saves onto this device. Returns the saved file name, or null if the user cancelled.
+  //   PC / Mac (Chrome, Edge) → "Save as" window · iPhone / iPad → share sheet → "Save to Files"
+  //   Android, Safari on Mac, Firefox → the Downloads folder
   async function saveFile(name, data, filters) {
-    if (canSavePicker) {
+    if (canSavePicker && !isAndroid) {
       try { return (await saveWithPicker(name, data, filters)).name; }
       catch (e) { if (e && e.name === 'AbortError') return null; /* fall back to download */ }
     }
+    if (isIOS && canShareFile(name)) {
+      try { return (await shareFile(name, data)) ? name : null; }
+      catch { /* fall back to download */ }
+    }
     download(name, data);
     return name;
+  }
+
+  // "Send to" from the Export card (web-send.js): the next export goes there instead of being saved.
+  let exportTarget = null;
+  async function deliverExport(name, data, filters) {
+    const target = exportTarget;
+    exportTarget = null;
+    if (target) return target(name, data);
+    const saved = await saveFile(name, data, filters);
+    return saved ? { ok: true, filePath: saved } : { ok: false, reason: 'canceled' };
   }
 
   // ── zip (for several files at once — the iPad has no "pick a folder") ──
@@ -115,151 +187,27 @@
   const toU8 = (data) => data instanceof Uint8Array ? data : typeof data === 'string' ? new TextEncoder().encode(data) : new Uint8Array(data);
 
   // ── fonts ──
-  // Fonts on the web shop / Google Fonts. Loaded on demand from fonts.googleapis.com (needs internet).
-  const GOOGLE_FONTS_BOLD = [ // have regular + bold
-    'Kanit', 'Prompt', 'Mitr', 'Sarabun', 'Chakra Petch', 'Bai Jamjuree', 'K2D', 'KoHo', 'Kodchasan', 'Krub',
-    'Niramit', 'Fahkwang', 'Charm', 'Charmonman', 'Srisakdi', 'Thasadith', 'Trirong', 'Taviraj', 'Pridi',
-    'Maitree', 'Athiti', 'Mali', 'Anuphan', 'Noto Sans Thai', 'Noto Serif Thai', 'Noto Sans Thai Looped',
-    'IBM Plex Sans Thai', 'IBM Plex Sans Thai Looped', 'Fredoka'
-  ];
-  const GOOGLE_FONTS_REGULAR = ['Itim', 'Sriracha', 'Pattaya', 'Chonburi', 'Pacifico', 'Bebas Neue', 'Lobster', 'Righteous'];
-  // Resolves when the font stylesheets are in (max 4 s — offline just means no Google fonts).
-  let googleFontsPromise = null;
-  function addGoogleFontLinks() {
-    if (googleFontsPromise) return googleFontsPromise;
-    const add = (family, bold) => new Promise(resolve => {
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = `https://fonts.googleapis.com/css2?family=${encodeURIComponent(family).replace(/%20/g, '+')}${bold ? ':wght@400;700' : ''}&display=swap`;
-      link.onload = link.onerror = resolve;
-      document.head.appendChild(link);
-    });
-    const all = Promise.all([...GOOGLE_FONTS_BOLD.map(f => add(f, true)), ...GOOGLE_FONTS_REGULAR.map(f => add(f, false))]);
-    googleFontsPromise = Promise.race([all, new Promise(r => setTimeout(r, 4000))]);
-    return googleFontsPromise;
-  }
-
-  // Fonts that come with iPad / Mac / Windows. Only the ones this device actually has are listed.
-  const DEVICE_FONT_CANDIDATES = [
-    // Apple
-    'Thonburi', 'Sukhumvit Set', 'Ayuthaya', 'Krungthep', 'Silom', 'Sathu', 'Helvetica', 'Helvetica Neue',
-    'Avenir', 'Avenir Next', 'Futura', 'Gill Sans', 'Optima', 'Didot', 'Baskerville', 'American Typewriter',
-    'Chalkboard SE', 'Marker Felt', 'Noteworthy', 'Menlo', 'Copperplate', 'Papyrus', 'Snell Roundhand',
-    // Windows
-    'Tahoma', 'Leelawadee UI', 'Leelawadee', 'Segoe UI', 'Cordia New', 'Angsana New', 'Browallia New',
-    'TH Sarabun New', 'Microsoft Sans Serif', 'Calibri', 'Cambria', 'Consolas', 'Comic Sans MS', 'Impact',
-    // both
-    'Arial', 'Arial Black', 'Verdana', 'Georgia', 'Times New Roman', 'Courier New', 'Trebuchet MS'
-  ];
-  function deviceHasFont(name) {
-    const ctx = document.createElement('canvas').getContext('2d');
-    const sample = 'กขคงพวงกุญแจ AaBbWwMm 0123 @#';
-    return ['monospace', 'serif', 'sans-serif'].some(base => {
-      ctx.font = `40px ${base}`;
-      const w0 = ctx.measureText(sample).width;
-      ctx.font = `40px "${name}", ${base}`;
-      return ctx.measureText(sample).width !== w0;
-    });
-  }
-
-  // Reads the family name stored inside a .ttf / .otf file (the name an order sheet refers to).
-  function fontFamilyFromFile(buf) {
-    try {
-      const v = new DataView(buf);
-      let off = 0;
-      if (v.getUint32(0) === 0x74746366) off = v.getUint32(12); // .ttc → first font
-      const numTables = v.getUint16(off + 4);
-      for (let i = 0; i < numTables; i++) {
-        const rec = off + 12 + i * 16;
-        if (String.fromCharCode(v.getUint8(rec), v.getUint8(rec + 1), v.getUint8(rec + 2), v.getUint8(rec + 3)) !== 'name') continue;
-        const t = v.getUint32(rec + 8);
-        const count = v.getUint16(t + 2), strings = t + v.getUint16(t + 4);
-        let best = null;
-        for (let j = 0; j < count; j++) {
-          const r = t + 6 + j * 12;
-          const platform = v.getUint16(r), lang = v.getUint16(r + 4), nameId = v.getUint16(r + 6);
-          const len = v.getUint16(r + 8), so = strings + v.getUint16(r + 10);
-          if (nameId !== 1 && nameId !== 16) continue;
-          let s = '';
-          if (platform === 3 || platform === 0) for (let k = 0; k < len; k += 2) s += String.fromCharCode(v.getUint16(so + k));
-          else for (let k = 0; k < len; k++) s += String.fromCharCode(v.getUint8(so + k));
-          const score = (nameId === 16 ? 2 : 0) + (platform === 3 && lang === 0x409 ? 1 : 0);
-          if (s && (!best || score > best.score)) best = { s, score };
+  // Only the shop's own fonts, shipped in fonts/ (list in fonts/fonts.json, made from the
+  // Swirly / Retro Groovy / fontOK_set01 folders). Each file is fetched the first time it is
+  // drawn, so opening the app doesn't download all of them.
+  let bundledPromise = null;
+  function registerBundledFonts() {
+    if (bundledPromise) return bundledPromise;
+    bundledPromise = (async () => {
+      try {
+        const list = await (await fetch('fonts/fonts.json')).json();
+        for (const f of list) {
+          document.fonts.add(new FontFace(f.family, `url("fonts/${encodeURIComponent(f.file)}")`));
         }
-        return best ? best.s.trim() : null;
-      }
-    } catch { /* not a font we can read */ }
-    return null;
+        return [...new Set(list.map(f => f.family))];
+      } catch (e) { console.error('fonts.json', e); return []; }
+    })();
+    return bundledPromise;
   }
 
-  async function registerUserFonts() {
-    const keys = (await kvKeys()).filter(k => String(k).startsWith('font:'));
-    const names = [];
-    for (const k of keys) {
-      const f = await kvGet(k);
-      try {
-        const face = new FontFace(f.family, f.data);
-        await face.load();
-        document.fonts.add(face);
-        names.push(f.family);
-      } catch (e) { console.warn('font failed', f.family, e); }
-    }
-    return names;
-  }
-
-  let localFonts = []; // from Chrome's "read fonts on this computer" (queryLocalFonts)
-  let userFonts = [];
   async function allFonts() {
-    const device = DEVICE_FONT_CANDIDATES.filter(deviceHasFont);
-    const google = [...GOOGLE_FONTS_BOLD, ...GOOGLE_FONTS_REGULAR];
-    return [...new Set([...userFonts, ...google, ...device, ...localFonts])].sort((a, b) => a.localeCompare(b));
+    return (await registerBundledFonts()).slice().sort((a, b) => a.localeCompare(b));
   }
-
-  async function addFonts() {
-    const files = await pickFiles('.ttf,.otf,.ttc,.woff,.woff2,font/*', true);
-    if (!files) return [];
-    const added = [];
-    for (const file of files) {
-      const data = await file.arrayBuffer();
-      const family = fontFamilyFromFile(data) || file.name.replace(/\.[^.]+$/, '');
-      try {
-        const face = new FontFace(family, data);
-        await face.load();
-        document.fonts.add(face);
-      } catch { alert(`อ่านไฟล์ฟอนต์ไม่ได้: ${file.name}`); continue; }
-      await kvSet('font:' + family, { family, fileName: file.name, data });
-      added.push(family);
-    }
-    if (added.length) {
-      userFonts = [...new Set([...userFonts, ...added])];
-      emit('fonts-changed', await allFonts());
-    }
-    return added;
-  }
-
-  async function listUserFonts() {
-    const keys = (await kvKeys()).filter(k => String(k).startsWith('font:'));
-    return keys.map(k => String(k).slice(5)).sort((a, b) => a.localeCompare(b));
-  }
-  async function deleteUserFont(family) {
-    await kvDel('font:' + family);
-    userFonts = userFonts.filter(f => f !== family);
-    emit('fonts-changed', await allFonts());
-  }
-
-  async function readComputerFonts() {
-    if (typeof window.queryLocalFonts !== 'function') {
-      alert('เบราว์เซอร์นี้อ่านรายชื่อฟอนต์ในเครื่องไม่ได้ (ทำได้เฉพาะ Chrome / Edge บนคอมพิวเตอร์)\nใช้เมนู ฟอนต์ → เพิ่มฟอนต์จากไฟล์ แทน');
-      return;
-    }
-    try {
-      const list = await window.queryLocalFonts();
-      localFonts = [...new Set(list.map(f => f.family))];
-      emit('fonts-changed', await allFonts());
-      alert(`อ่านฟอนต์ในเครื่องได้ ${localFonts.length} ตัว`);
-    } catch (e) { alert(`อ่านฟอนต์ไม่ได้: ${e.message || e}`); }
-  }
-
   // ── icons ──
   const BUILTIN_ICONS = ['bone', 'cat', 'cloud', 'crown', 'donut', 'fish', 'flower', 'heart', 'lightning', 'moon', 'music', 'paw', 'star'];
   let builtinIconCache = null;
@@ -297,12 +245,7 @@
   const projectHandles = new Map(); // file name → FileSystemFileHandle (Chrome/Edge: save overwrites)
 
   window.api = {
-    listSystemFonts: async () => {
-      const google = addGoogleFontLinks();
-      userFonts = await registerUserFonts();
-      await google;
-      return allFonts();
-    },
+    listSystemFonts: allFonts,
     getFavoriteFonts: async () => lsGet('favoriteFonts', []),
     saveFavoriteFonts: async (list) => { lsSet('favoriteFonts', list); return { ok: true }; },
 
@@ -355,7 +298,7 @@
     finishFolder: async (dir) => {
       const f = folders.get(dir);
       folders.delete(dir);
-      if (f && f.files && Object.keys(f.files).length) download(f.zipName, await zipFiles(f.files));
+      if (f && f.files && Object.keys(f.files).length) await saveFile(f.zipName, await zipFiles(f.files), [{ name: 'ZIP', extensions: ['zip'] }]);
     },
 
     saveProject: async ({ filePath, defaultName, text }) => {
@@ -376,10 +319,9 @@
           download(defaultName, text); name = defaultName;
         }
       } else {
-        // Safari / iPad: each save downloads a new copy of the file.
-        const suggested = filePath || defaultName;
-        download(suggested, text);
-        name = suggested;
+        // Safari / iPad / Android: each save makes a new copy (Files app or Downloads).
+        name = await saveFile(filePath || defaultName, text);
+        if (!name) return null;
       }
       await addRecent(name, text);
       return name;
@@ -433,17 +375,15 @@
     },
     deleteIcon: async (file) => { await kvDel('icon:' + String(file)); return true; },
 
-    saveExport: async ({ defaultName, filters, data }) => {
-      const name = await saveFile(defaultName, toU8(data), filters);
-      return name ? { ok: true, filePath: name } : { ok: false, reason: 'canceled' };
-    },
+    saveExport: ({ defaultName, filters, data }) => deliverExport(defaultName, toU8(data), filters),
     // Several STL files: one .zip (the iPad can't save several files from one dialog).
     saveExportMulti: async ({ defaultName, files }) => {
       const base = defaultName.replace(/\.[^.]+$/, ''), ext = extOf(defaultName);
       const entries = {};
       for (const f of files) entries[`${base}${f.suffix}.${ext}`] = toU8(f.data);
-      const name = await saveFile(`${base}.zip`, await zipFiles(entries), [{ name: 'ZIP', extensions: ['zip'] }]);
-      return name ? { ok: true, filePath: `${name} (${files.length} ไฟล์)` } : { ok: false, reason: 'canceled' };
+      const res = await deliverExport(`${base}.zip`, await zipFiles(entries), [{ name: 'ZIP', extensions: ['zip'] }]);
+      if (res.ok) res.filePath = `${res.filePath} (${files.length} ไฟล์)`;
+      return res;
     },
 
     selftestInfo: async () => null,
@@ -454,9 +394,103 @@
     onFontsChanged: (cb) => on('fonts-changed', cb)
   };
 
+  // ── the work in progress, remembered in this browser (reopens where you left off) ──
+  let autosaveTimer = null, autosavePending = null;
+  function autosaveSoon(entry) { // entry: { text, projectPath, dirty }
+    autosavePending = entry;
+    clearTimeout(autosaveTimer);
+    autosaveTimer = setTimeout(flushAutosave, 600);
+  }
+  function flushAutosave() {
+    clearTimeout(autosaveTimer);
+    if (!autosavePending) return;
+    const entry = { ...autosavePending, at: Date.now() };
+    autosavePending = null;
+    kvSet('autosave', entry).catch(e => console.warn('autosave', e));
+  }
+  window.addEventListener('pagehide', flushAutosave);
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') flushAutosave(); });
+
+  async function newWork() {
+    if (dirty && !confirm('เริ่มงานใหม่? งานที่เปิดอยู่ยังไม่ได้บันทึกเป็นไฟล์')) return;
+    clearTimeout(autosaveTimer); autosavePending = null;
+    await kvDel('autosave');
+    dirty = false;
+    location.reload();
+  }
+
+  // ── settings file: carry this browser's settings to another Mac / iPad / PC ──
+  const SETTINGS_FORMAT = 'onzen-flat-keychain-settings';
+  const LS_KEYS = ['prefs', 'presets', 'favoriteFonts', 'sendTarget'];
+
+  async function exportSettings() {
+    flushAutosave();
+    const ls = {};
+    for (const k of LS_KEYS) { const v = lsGet(k, null); if (v != null) ls[k] = v; }
+    const data = {
+      format: SETTINGS_FORMAT, version: 1, savedAt: new Date().toISOString(),
+      localStorage: ls,
+      icons: await userIcons(),
+      recent: (await kvGet('recent')) || [],
+      work: (await kvGet('autosave')) || null
+    };
+    const name = `Onzen-ตั้งค่า_${new Date().toISOString().slice(0, 10)}.json`;
+    const saved = await saveFile(name, JSON.stringify(data), [{ name: 'ไฟล์ตั้งค่า', extensions: ['json'] }]);
+    if (saved) {
+      alert(`ส่งออกการตั้งค่าแล้ว: ${saved}\n\nเก็บไฟล์นี้ไว้ใน iCloud Drive / Dropbox / ส่งทาง AirDrop\nแล้วที่เครื่องอื่นเปิดเมนู ไฟล์ → นำเข้าการตั้งค่า`);
+    }
+  }
+
+  async function importSettings() {
+    const files = await pickFiles('.json,application/json');
+    if (!files) return;
+    let data;
+    try { data = JSON.parse(await readText(files[0])); } catch { alert('อ่านไฟล์ไม่ได้'); return; }
+    if (!data || data.format !== SETTINGS_FORMAT) { alert('ไฟล์นี้ไม่ใช่ไฟล์ตั้งค่าของ Onzen Flat Keychain'); return; }
+    const ls = data.localStorage || {};
+    const done = [];
+    if (ls.prefs) { lsSet('prefs', { ...lsGet('prefs', {}), ...ls.prefs }); done.push('ค่าในเมนูตั้งค่า'); }
+    if (Array.isArray(ls.presets)) { // same name → the imported one wins
+      const byName = new Map(lsGet('presets', []).map(p => [p.name, p]));
+      for (const p of ls.presets) byName.set(p.name, p);
+      lsSet('presets', [...byName.values()]);
+      done.push(`preset ${ls.presets.length} อัน`);
+    }
+    if (Array.isArray(ls.favoriteFonts)) {
+      lsSet('favoriteFonts', [...new Set([...lsGet('favoriteFonts', []), ...ls.favoriteFonts])]);
+      done.push(`ฟอนต์โปรด ${ls.favoriteFonts.length} ตัว`);
+    }
+    if (ls.sendTarget) lsSet('sendTarget', ls.sendTarget);
+    if (Array.isArray(data.icons) && data.icons.length) {
+      for (const ic of data.icons) if (ic && ic.file) await kvSet('icon:' + ic.file, ic);
+      done.push(`ไอคอนของฉัน ${data.icons.length} รูป`);
+    }
+    if (Array.isArray(data.recent) && data.recent.length) {
+      const merged = new Map(((await kvGet('recent')) || []).map(p => [p.name, p]));
+      for (const p of data.recent) { const cur = merged.get(p.name); if (!cur || (p.at || 0) > (cur.at || 0)) merged.set(p.name, p); }
+      await kvSet('recent', [...merged.values()].sort((a, b) => (b.at || 0) - (a.at || 0)).slice(0, 10));
+      done.push(`งานล่าสุด ${data.recent.length} งาน`);
+    }
+    let takeWork = false;
+    if (data.work && data.work.text) {
+      takeWork = confirm('ในไฟล์มีงานที่ทำค้างไว้จากเครื่องนั้นด้วย\nเปิดงานนั้นแทนงานที่เปิดอยู่ตอนนี้ไหม?\n\n(ยกเลิก = เก็บงานตอนนี้ไว้)');
+      if (takeWork) {
+        clearTimeout(autosaveTimer); autosavePending = null;
+        await kvSet('autosave', { ...data.work, dirty: true });
+        done.push('งานที่ทำค้าง');
+      }
+    }
+    alert(`นำเข้าแล้ว:\n• ${done.join('\n• ') || '(ไม่มีข้อมูล)'}\n\nโปรแกรมจะโหลดใหม่`);
+    if (!takeWork) flushAutosave();
+    dirty = false;
+    location.reload();
+  }
+
   // used by web-menu.js
   window.webApp = {
-    emit, on, kvGet, lsGet, lsSet, addFonts, listUserFonts, deleteUserFont, readComputerFonts,
+    autosaveSoon, autosaveGet: () => kvGet('autosave'), newWork, exportSettings, importSettings,
+    emit, on, kvGet, lsGet, lsSet, saveFile, shareFile, canShareFile, isIOS, isAndroid,
+    setExportTarget: (fn) => { exportTarget = fn; },
     recentProjects: async () => ((await kvGet('recent')) || []).map(p => p.name),
     clearRecent: async () => { await kvSet('recent', []); },
     setPref: (key, value) => {

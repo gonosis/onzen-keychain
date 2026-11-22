@@ -449,7 +449,15 @@ function commit() {
   historyPending = true;
   requestRebuild('full');
   renderLayerList();
+  rememberWork();
 }
+
+// web: keep the work in progress in this browser, so opening the app again continues it.
+function rememberWork() {
+  if (!restoreDone) return; // don't overwrite the saved work with the startup design
+  window.webApp?.autosaveSoon({ text: serializeProject(), projectPath, dirty: projectDirty });
+}
+var restoreDone = false;
 
 // ── Undo / redo (snapshot-based) ───────────────────────
 const history = [];
@@ -1105,7 +1113,128 @@ function renderOverlay() {
     onTop(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(pts),
       new THREE.LineBasicMaterial({ color: 0xffb070, depthTest: false, transparent: true, opacity: 0.8 })));
   }
+  positionZBar(); // web:
 }
+
+// web: height of the selected element, straight from the viewport — a small bar beside it.
+// Drag the number up / down (or tap ▲ ▼) to change the height. It edits the same values as the
+// side panel (element relief over a raised base, otherwise the piece / base thickness), so the
+// panel and the bar always show the same number.
+function heightTarget() {
+  const el = selected();
+  if (!el || !el.visible || el.type === 'hole') return null;
+  const twoLevel = elements.some(e => e.type === 'base' && e.visible && e.baseStyle === 'raised');
+  if (settings.lockZ) {
+    // total height is locked (left panel) → the bar moves that target, like editing "หนารวม Z"
+    return { el, label: 'รวม 🔒', title: 'ความสูงรวม (ล็อกอยู่)',
+      get: () => settings.targetZ, set: (v) => { settings.targetZ = Math.max(0.4, v); } };
+  }
+  if (twoLevel && el.type !== 'base') {
+    if (el.altHeights) return { el, label: 'นูน', disabled: 'สลับความสูงคี่/คู่ — ปรับในการ์ดข้อความ', get: () => el.altOddMM };
+    return { el, label: 'นูน', title: 'ความสูงที่นูนจากฐาน (ชิ้นนี้)',
+      get: () => (el.useSharedThickness !== false ? settings.elementThicknessMM : el.elThicknessMM),
+      set: (v) => { el.useSharedThickness = false; el.elThicknessMM = v; } };
+  }
+  return { el, label: twoLevel ? 'ฐาน' : 'หนา', title: twoLevel ? 'ความหนาฐาน' : 'ความหนาชิ้นงาน',
+    get: () => settings.thicknessMM, set: (v) => { settings.thicknessMM = v; } };
+}
+
+var zBar = document.createElement('div'); // var: renderOverlay may run before this line
+zBar.className = 'zbar hide';
+zBar.innerHTML = '<button class="zb-up" title="+0.1 mm">▲</button><div class="zb-grip"><span class="zb-lbl"></span><b class="zb-val"></b><span>mm</span></div><button class="zb-dn" title="−0.1 mm">▼</button>';
+document.body.appendChild(zBar);
+const zStyle = document.createElement('style');
+zStyle.textContent = `
+  .zbar { position: fixed; z-index: 50; display: flex; flex-direction: column; align-items: stretch; width: 58px;
+    background: rgba(30,30,30,.92); border: 1px solid #ff9a3c; border-radius: 8px; overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,.45); -webkit-user-select: none; user-select: none; touch-action: none; }
+  .zbar.hide { display: none; }
+  .zbar button { background: none; border: none; color: #ff9a3c; padding: 4px 0; font-size: 12px; border-radius: 0; cursor: pointer; }
+  .zbar button:active { background: #ff9a3c; color: #111; }
+  .zbar .zb-grip { display: flex; flex-direction: column; align-items: center; padding: 3px 0; cursor: ns-resize;
+    border-top: 1px solid #444; border-bottom: 1px solid #444; font-size: 10px; color: #bbb; line-height: 1.25; }
+  .zbar .zb-val { font-size: 14px; color: #fff; }
+  .zbar.dragging .zb-grip { background: #ff9a3c33; }
+  .zbar.off { border-color: #555; opacity: .7; }
+  .zbar.off button, .zbar.off .zb-grip { cursor: not-allowed; color: #777; }`;
+document.head.appendChild(zStyle);
+
+let zDrag = null;
+function zBarState() {
+  const t = heightTarget();
+  if (!t) return null;
+  return { ...t, off: t.disabled || null };
+}
+
+function positionZBar() {
+  if (!zBar) return;
+  const t = zBarState();
+  if (!t) { zBar.classList.add('hide'); return; }
+  // right edge of the element on screen (auto-sized bases: the whole piece)
+  let pts;
+  if (isTransformable(t.el)) pts = itemCorners(t.el);
+  else if (lastResult) { const b = lastResult.bounds; pts = [{ x: b.minX, y: b.minY }, { x: b.maxX, y: b.minY }, { x: b.maxX, y: b.maxY }, { x: b.minX, y: b.maxY }]; }
+  else { zBar.classList.add('hide'); return; }
+  const s = pts.map(p => toScreen(p.x, p.y));
+  const rect = renderer.domElement.getBoundingClientRect();
+  const right = Math.max(...s.map(p => p.x)), midY = s.reduce((a, p) => a + p.y, 0) / s.length;
+  const w = 58, h = 84;
+  zBar.style.left = `${Math.round(Math.min(rect.right - w - 6, Math.max(rect.left + 6, right + 16)))}px`;
+  zBar.style.top = `${Math.round(Math.min(rect.bottom - h - 6, Math.max(rect.top + 6, midY - h / 2)))}px`;
+  zBar.querySelector('.zb-lbl').textContent = t.label;
+  const v = t.get();
+  zBar.querySelector('.zb-val').textContent = v == null ? '–' : String(+(+v).toFixed(2));
+  zBar.title = t.off || `${t.title} · ลากขึ้น/ลง หรือกด ▲ ▼ · ค่าเดียวกับแผงด้านข้าง`;
+  zBar.classList.toggle('off', !!t.off);
+  zBar.classList.remove('hide');
+}
+
+function setZValue(t, v, final) {
+  t.set(Math.max(0.2, Math.min(60, Math.round(v * 100) / 100)));
+  renderProps();
+  renderPartsPanel(true);
+  positionZBar();
+  if (final) commit();
+  else requestRebuild('draft');
+}
+
+for (const [cls, step] of [['.zb-up', 0.1], ['.zb-dn', -0.1]]) {
+  zBar.querySelector(cls).addEventListener('click', (e) => {
+    e.stopPropagation();
+    const t = zBarState();
+    if (!t || t.off || !t.set) return;
+    setZValue(t, (t.get() || 0) + step, true);
+  });
+}
+const zGrip = zBar.querySelector('.zb-grip');
+zGrip.addEventListener('pointerdown', (e) => {
+  e.stopPropagation();
+  const t = zBarState();
+  if (!t || t.off || !t.set) return;
+  zDrag = { t, y: e.clientY, v0: t.get() || 0, moved: false };
+  try { zGrip.setPointerCapture(e.pointerId); } catch { /* pointer already gone */ }
+  zBar.classList.add('dragging');
+});
+zGrip.addEventListener('pointermove', (e) => {
+  if (!zDrag) return;
+  e.stopPropagation();
+  const dy = zDrag.y - e.clientY;
+  if (!zDrag.moved && Math.abs(dy) < 2) return;
+  zDrag.moved = true;
+  // 0.02 mm per pixel (Shift: 0.005 for fine steps); snapped to 0.1 mm unless Shift
+  const raw = zDrag.v0 + dy * (e.shiftKey ? 0.005 : 0.02);
+  setZValue(zDrag.t, e.shiftKey ? raw : Math.round(raw * 10) / 10, false);
+});
+const endZDrag = (e) => {
+  if (!zDrag) return;
+  const d = zDrag;
+  zDrag = null;
+  zBar.classList.remove('dragging');
+  if (d.moved) setZValue(d.t, d.t.get(), true);
+};
+zGrip.addEventListener('pointerup', endZDrag);
+zGrip.addEventListener('pointercancel', endZDrag);
+window.addEventListener('resize', () => positionZBar());
 // The rotate knob's offset is screen-constant, so re-place it when the camera zooms.
 controls.addEventListener('change', () => { if (selected()) renderOverlay(); });
 
@@ -1247,6 +1376,15 @@ window.addEventListener('pointerup', (e) => {
   // Plain click on a part (multi-part results) → its quick-edit popup.
   const partKey = isClick && (d.kind === 'none' || d.kind === 'element') ? pickPart(e.clientX, e.clientY) : null;
   if (partKey) openPartPopup(partKey, e.clientX, e.clientY);
+  // web: a click on a part also selects the element it belongs to (the base too — an auto-sized
+  // base has no box to grab, so this is the only way to pick it in the viewport); the right
+  // panel and the height bar follow.
+  // A plain click goes by the part actually under the cursor, not the element's box (the text's
+  // box covers most of the base, e.g. the gaps between letters).
+  if (isClick && (d.kind === 'none' || d.kind === 'element')) {
+    const owner = partKey ? elementOfPart(partKey) : d.kind === 'none' && modelHit(e.clientX, e.clientY) ? autoBase() : null;
+    if (owner) { if (owner.id !== selectedId) select(owner.id); if (d.kind === 'none') return; }
+  }
   if (d.kind === 'none') {
     // Plain click on empty space deselects.
     if (isClick && !partKey) { select(null); closePartPopup(); }
@@ -1270,6 +1408,26 @@ function pickPart(clientX, clientY) {
   raycaster.setFromCamera(ndc, camera);
   const hit = raycaster.intersectObjects(partsGroup.children, false)[0];
   return hit ? hit.object.userData.key : null;
+}
+
+// web: which element a part belongs to ('base' part → the visible raised base).
+function elementOfPart(key) {
+  const p = (colorPartsOf(lastResult) || []).find(pp => (pp.key || pp.name) === key);
+  if (!p) return null;
+  if (p.elementId != null) return elements.find(el => el.id === p.elementId) || null;
+  if ((p.kind || p.name) === 'base') return elements.find(el => el.type === 'base' && el.visible && el.baseStyle === 'raised') || autoBase();
+  return autoBase();
+}
+function autoBase() {
+  return elements.find(el => el.type === 'base' && el.visible) || null;
+}
+// web: did the click land on the model (single body or the two color parts)?
+function modelHit(clientX, clientY) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  const ndc = new THREE.Vector2(((clientX - rect.left) / rect.width) * 2 - 1, -((clientY - rect.top) / rect.height) * 2 + 1);
+  raycaster.setFromCamera(ndc, camera);
+  const meshes = [modelMesh, bodyMesh, borderMesh].filter(m => m.visible);
+  return raycaster.intersectObjects(meshes, false).length > 0;
 }
 
 function openPartPopup(key, x, y) {
@@ -1652,6 +1810,7 @@ async function saveProject(saveAs = false) {
   projectDirty = false;
   window.api.setDirty(false);
   updateTitle();
+  rememberWork(); // web:
   return true;
 }
 
@@ -1682,6 +1841,7 @@ async function openProject(recentPath = null) {
   projectDirty = false;
   window.api.setDirty(false);
   updateTitle();
+  rememberWork(); // web:
 }
 
 window.api.onMenu('project-save', () => saveProject(false));
@@ -1757,13 +1917,22 @@ async function init() {
   const selftest = await window.api.selftestInfo();
   if (selftest) { await runSelfTest(); return; }
 
-  addTextElement();
+  // web: continue the work left open last time in this browser
+  let restored = null;
+  try {
+    const saved = await window.webApp?.autosaveGet();
+    if (saved?.text) { loadProjectData(JSON.parse(saved.text)); restored = saved; }
+  } catch (e) { console.warn('restore failed', e); }
+  if (!restored) addTextElement();
   await waitForBuild();
   fitView('3d');
   // the starting design isn't "unsaved work" yet
-  projectDirty = false;
-  window.api.setDirty(false);
+  projectPath = restored?.projectPath || null;
+  projectDirty = !!restored?.dirty;
+  window.api.setDirty(projectDirty);
   updateTitle();
+  restoreDone = true;
+  rememberWork();
 }
 
 function waitForBuild() {

@@ -1,0 +1,884 @@
+[
+{
+"family": "Aloha Chunky",
+"style": "Regular",
+"file": "Aloha-Chunky-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Amazing Teacher Sans",
+"style": "Regular",
+"file": "Amazing-Teacher-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Amazing Teacher Script",
+"style": "Regular",
+"file": "Amazing-Teacher-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Angelica",
+"style": "Regular",
+"file": "Angelica-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Artilla Script",
+"style": "Regular",
+"file": "Artilla-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Astereiska Script",
+"style": "Regular",
+"file": "Astereiska-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Austina",
+"style": "Regular",
+"file": "Austina-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Beauty Smile",
+"style": "Regular",
+"file": "Beauty-Smile-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Belishia",
+"style": "Regular",
+"file": "Belishia-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Bentley Script",
+"style": "Regular",
+"file": "Bentley-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "berlian",
+"style": "Regular",
+"file": "berlian-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Berrylina Script",
+"style": "Regular",
+"file": "Berrylina-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Bertilda Script",
+"style": "Regular",
+"file": "Bertilda-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Beverly Script",
+"style": "Regular",
+"file": "Beverly-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Bitthai Sans",
+"style": "Regular",
+"file": "Bitthai-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Bitthai Script",
+"style": "Regular",
+"file": "Bitthai-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Bitthai Slant",
+"style": "Italic",
+"file": "Bitthai-Slant-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Catherine",
+"style": "Regular",
+"file": "Catherine-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Challista Sans",
+"style": "Regular",
+"file": "Challista-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Challista Sans Slant",
+"style": "Regular",
+"file": "Challista-Sans-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Challista Script",
+"style": "Regular",
+"file": "Challista-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Challista Slant",
+"style": "Regular",
+"file": "Challista-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Charlize",
+"style": "Regular",
+"file": "Charlize-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Cherry Belle",
+"style": "Regular",
+"file": "Cherry-Belle-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Delight Sans",
+"style": "Regular",
+"file": "Delight-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Delight Sans Slant",
+"style": "Regular",
+"file": "Delight-Sans-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Delight Script",
+"style": "Regular",
+"file": "Delight-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Delight Slant",
+"style": "Regular",
+"file": "Delight-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Desyanti Script",
+"style": "Regular",
+"file": "Desyanti-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Diantha",
+"style": "Regular",
+"file": "Diantha-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Dreamy Sunday",
+"style": "Regular",
+"file": "Dreamy-Sunday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Eritta Script",
+"style": "Regular",
+"file": "Eritta-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Eritta Script Bold",
+"style": "Bold",
+"file": "Eritta-Script-Bold-Bold.otf",
+"weight": 700,
+"italic": false
+},
+{
+"family": "Eritta Script Bold Slant",
+"style": "Bold",
+"file": "Eritta-Script-Bold-Slant-Bold.otf",
+"weight": 700,
+"italic": false
+},
+{
+"family": "Eritta Script Slant",
+"style": "Regular",
+"file": "Eritta-Script-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Fabulous Script",
+"style": "Regular",
+"file": "Fabulous-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Fasterox Script",
+"style": "Regular",
+"file": "Fasterox-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "fragile",
+"style": "Regular",
+"file": "fragile-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "friday",
+"style": "Regular",
+"file": "friday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Funky Flower",
+"style": "Regular",
+"file": "Funky-Flower-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Galatia Script",
+"style": "Regular",
+"file": "Galatia-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Gethania",
+"style": "Regular",
+"file": "Gethania-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Groovy Cartoon",
+"style": "Regular",
+"file": "Groovy-Cartoon-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Groovy Cartoon Expanded Round",
+"style": "Regular",
+"file": "Groovy-Cartoon-Expanded-Round-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Groovy Cartoon Round",
+"style": "Regular",
+"file": "Groovy-Cartoon-Round-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Groovy Merry",
+"style": "Regular",
+"file": "Groovy-Merry-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Groovy Sunday",
+"style": "Regular",
+"file": "Groovy-Sunday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Haleigh Script",
+"style": "Regular",
+"file": "Haleigh-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "halley",
+"style": "Regular",
+"file": "halley-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "hamster",
+"style": "Regular",
+"file": "hamster-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Happy Christmas Script",
+"style": "Regular",
+"file": "Happy-Christmas-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "hawthorn",
+"style": "Regular",
+"file": "hawthorn-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "heart love",
+"style": "Regular",
+"file": "heart-love-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Hendryan",
+"style": "Regular",
+"file": "Hendryan-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Histeria Script",
+"style": "Regular",
+"file": "Histeria-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Humble Sans",
+"style": "Regular",
+"file": "Humble-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Humble Script",
+"style": "Regular",
+"file": "Humble-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Humble Slant",
+"style": "Regular",
+"file": "Humble-Slant-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Katlyne",
+"style": "Regular",
+"file": "Katlyne-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Katrina Script",
+"style": "Regular",
+"file": "Katrina-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Kimberly Script",
+"style": "Regular",
+"file": "Kimberly-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Kind Soul",
+"style": "Regular",
+"file": "Kind-Soul-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Last Night",
+"style": "Regular",
+"file": "Last-Night-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "leighton",
+"style": "Regular",
+"file": "leighton-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Leisha Script",
+"style": "Regular",
+"file": "Leisha-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Litesha Script",
+"style": "Regular",
+"file": "Litesha-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Lotherday Script",
+"style": "Regular",
+"file": "Lotherday-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Madelina Script",
+"style": "Regular",
+"file": "Madelina-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Magic Alphabet",
+"style": "Regular",
+"file": "Magic-Alphabet-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Magic Flower",
+"style": "Regular",
+"file": "Magic-Flower-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Magic Flower Italic a",
+"style": "Italic",
+"file": "Magic-Flower-Italic-a-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Magic Summer",
+"style": "Regular",
+"file": "Magic-Summer-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Magical Toddler",
+"style": "Regular",
+"file": "Magical-Toddler-Regular.ttf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Magical Touch",
+"style": "Regular",
+"file": "Magical-Touch-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Mansfield",
+"style": "Regular",
+"file": "Mansfield-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Mansfield Italic",
+"style": "Italic",
+"file": "Mansfield-Italic-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Master Vintage",
+"style": "Regular",
+"file": "Master-Vintage-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Minthas Script",
+"style": "Regular",
+"file": "Minthas-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "mulidey",
+"style": "Regular",
+"file": "mulidey-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "niesha",
+"style": "Regular",
+"file": "niesha-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Nightmare Script",
+"style": "Regular",
+"file": "Nightmare-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Perfectly Vintages",
+"style": "Regular",
+"file": "Perfectly-Vintages-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Picky Retro",
+"style": "Regular",
+"file": "Picky-Retro-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Picky Retro Italic",
+"style": "Regular",
+"file": "Picky-Retro-Italic-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "plankton",
+"style": "Regular",
+"file": "plankton-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Princella Bold",
+"style": "Bold",
+"file": "Princella-Bold-Bold.otf",
+"weight": 700,
+"italic": false
+},
+{
+"family": "Princella Bold Slant",
+"style": "Italic",
+"file": "Princella-Bold-Slant-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Princella Sans",
+"style": "Regular",
+"file": "Princella-Sans-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Princella Script",
+"style": "Regular",
+"file": "Princella-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Princella Slant",
+"style": "Italic",
+"file": "Princella-Slant-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "PRUISTIN",
+"style": "Regular",
+"file": "PRUISTIN-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "PRUISTIN SANS It",
+"style": "Italic",
+"file": "PRUISTIN-SANS-It-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Pruistin Script",
+"style": "Regular",
+"file": "Pruistin-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Pruistin Script It",
+"style": "Italic",
+"file": "Pruistin-Script-It-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Ranuella",
+"style": "Regular",
+"file": "Ranuella-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Ranuella Slant",
+"style": "Italic",
+"file": "Ranuella-Slant-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Rasella",
+"style": "Regular",
+"file": "Rasella-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Rasendrya",
+"style": "Regular",
+"file": "Rasendrya-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Rasendrya Italic",
+"style": "Italic",
+"file": "Rasendrya-Italic-Italic.otf",
+"weight": 400,
+"italic": true
+},
+{
+"family": "Reading Script",
+"style": "Regular",
+"file": "Reading-Script-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Amor",
+"style": "Regular",
+"file": "Retro-Amor-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Amor Italic",
+"style": "Regular",
+"file": "Retro-Amor-Italic-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Butterfly",
+"style": "Regular",
+"file": "Retro-Butterfly-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Daisy",
+"style": "Regular",
+"file": "Retro-Daisy-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Groove",
+"style": "Regular",
+"file": "Retro-Groove-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Grovies",
+"style": "Regular",
+"file": "Retro-Grovies-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Kraft",
+"style": "Regular",
+"file": "Retro-Kraft-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Kraft Italic",
+"style": "Regular",
+"file": "Retro-Kraft-Italic-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Magic",
+"style": "Regular",
+"file": "Retro-Magic-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Notes",
+"style": "Regular",
+"file": "Retro-Notes-Regular.ttf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Sunday",
+"style": "Regular",
+"file": "Retro-Sunday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Retro Thick",
+"style": "Regular",
+"file": "Retro-Thick-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Sallita",
+"style": "Regular",
+"file": "Sallita-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "seabright",
+"style": "Regular",
+"file": "seabright-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "shelter",
+"style": "Regular",
+"file": "shelter-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Smile Sunday",
+"style": "Regular",
+"file": "Smile-Sunday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Story of Christmas",
+"style": "Regular",
+"file": "Story-of-Christmas-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Sunday Magical",
+"style": "Regular",
+"file": "Sunday-Magical-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Sunday Vibes",
+"style": "Regular",
+"file": "Sunday-Vibes-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Super Retro",
+"style": "Regular",
+"file": "Super-Retro-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Thatcher",
+"style": "Regular",
+"file": "Thatcher-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "the lazy",
+"style": "Regular",
+"file": "the-lazy-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "The winter",
+"style": "Regular",
+"file": "The-winter-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Twinkle Holiday",
+"style": "Regular",
+"file": "Twinkle-Holiday-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Vintage Children",
+"style": "Regular",
+"file": "Vintage-Children-Regular.otf",
+"weight": 400,
+"italic": false
+},
+{
+"family": "Vintage Mother",
+"style": "Regular",
+"file": "Vintage-Mother-Regular.otf",
+"weight": 400,
+"italic": false
+}
+]

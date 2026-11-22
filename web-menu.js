@@ -73,6 +73,7 @@
   menu('ไฟล์', async () => {
     const recent = await app.recentProjects();
     return [
+      { label: 'งานใหม่', run: () => app.newWork() },
       { label: 'เปิดงาน (.kcproj)...', key: `${mod}⇧O`, run: () => app.emit('project-open') },
       { label: 'บันทึกงาน', key: `${mod}S`, run: () => app.emit('project-save') },
       { label: 'บันทึกงานเป็น...', key: `${mod}⇧S`, run: () => app.emit('project-save-as') },
@@ -84,21 +85,11 @@
       ...(recent.length ? [{ label: 'ล้างรายการ', run: () => app.clearRecent() }] : []),
       '-',
       { label: 'โหลดใบงานจากเว็บ (order-….json)...', key: `${mod}O`, run: () => window.api.openOrder() },
-      { label: 'รายการในใบงานที่โหลดล่าสุด', key: `${mod}L`, run: () => app.emit('order-show') }
-    ];
-  });
-
-  menu('ฟอนต์', async () => {
-    const mine = await app.listUserFonts();
-    return [
-      { label: 'เพิ่มฟอนต์จากไฟล์ (.ttf / .otf)...', run: async () => {
-          const added = await app.addFonts();
-          if (added.length) alert(`เพิ่มฟอนต์แล้ว:\n• ${added.join('\n• ')}`);
-        } },
-      { label: 'อ่านฟอนต์ในเครื่อง (Chrome / Edge)', run: () => app.readComputerFonts() },
+      { label: 'รายการในใบงานที่โหลดล่าสุด', key: `${mod}L`, run: () => app.emit('order-show') },
       '-',
-      { section: mine.length ? 'ฟอนต์ที่เพิ่มเอง (กดเพื่อลบ)' : 'ยังไม่ได้เพิ่มฟอนต์เอง' },
-      ...mine.map(f => ({ label: `✕  ${f}`, run: async () => { if (confirm(`ลบฟอนต์ "${f}" ออกจากเบราว์เซอร์นี้?`)) await app.deleteUserFont(f); } }))
+      { section: 'ย้ายการตั้งค่าไปเครื่องอื่น (Mac / iPad / PC)' },
+      { label: 'ส่งออกการตั้งค่า...', run: () => app.exportSettings() },
+      { label: 'นำเข้าการตั้งค่า...', run: () => app.importSettings() }
     ];
   });
 
